@@ -346,3 +346,47 @@ select, input[type="text"], input[type="color"] {
   z-index: 10;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
+
+/* Visualizzazione */
+/* Stili per la modalità sola visualizzazione (?mode=view) */
+body.view-only-mode {
+  overflow: hidden; /* Evita scrollbar inutili */
+}
+
+/* Nasconde sidebar, schede stanze, controlli editor e info selezione */
+body.view-only-mode .sidebar,
+body.view-only-mode .tabs-container,
+body.view-only-mode .room-tabs,
+body.view-only-mode .btn-add-room,
+body.view-only-mode .editor-controls,
+body.view-only-mode #selectionInfo {
+  display: none !important;
+}
+
+/* Centra il contenitore principale a tutto schermo */
+body.view-only-mode .main-content,
+body.view-only-mode .app-container {
+  width: 100vw;
+  height: 100vh;
+  padding: 20px;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* Centra il wrapper e limita la dimensione della griglia per mantenerla proporzionata */
+body.view-only-mode .grid-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+body.view-only-mode #roomGrid {
+  max-width: 90vw;
+  max-height: 90vh;
+  margin: auto;
+}

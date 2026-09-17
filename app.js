@@ -20,14 +20,40 @@ let isMouseDown = false;
 let dragStartCoords = null;
 let tileElements = [];
 
-function init() {
-  inizializzaStanzaAttiva();
-  renderTabsStanze();
-  renderCategorie();
-  renderGriglia();
-  setupDragSelection();
+// ---------------------------------------------------------
+// INIZIALIZZAZIONE & CARICAMENTO JSON AUTOMATICO
+// ---------------------------------------------------------
+async function init() {
+  // Prova a caricare il layout da file JSON nel repository
+  await caricaLayoutDaRepo();
 
+  if (isModalitaVisualizzazione()) {
+    // Applica lo stile visivo per la sola consultazione
+    document.body.classList.add('view-only-mode');
+  } else {
+    // Inizializza i controlli dell'editor solo in modalità modifica
+    renderTabsStanze();
+    renderCategorie();
+    setupDragSelection();
+  }
+
+  renderGriglia();
   window.addEventListener('resize', debounce(renderGriglia, 150));
+}
+
+async function caricaLayoutDaRepo() {
+  try {
+    const response = await fetch('bacheca.json');
+    if (response.ok) {
+      const data = await response.json();
+      appState = data;
+      if (appState.stanzaAttivaIdx === undefined) appState.stanzaAttivaIdx = 0;
+    }
+  } catch (err) {
+    console.log("Nessun file bacheca.json trovato o errore nel caricamento. Uso lo stato predefinito.", err);
+  }
+
+  inizializzaStanzaAttiva();
 }
 
 function getStanzaCorrente() {
@@ -36,6 +62,7 @@ function getStanzaCorrente() {
 
 function inizializzaStanzaAttiva() {
   const stanza = getStanzaCorrente();
+  if (!stanza) return;
   if (!stanza.griglia) stanza.griglia = {};
   for (let r = 0; r < stanza.righe; r++) {
     for (let c = 0; c < stanza.colonne; c++) {
@@ -43,6 +70,11 @@ function inizializzaStanzaAttiva() {
       if (!stanza.griglia[key]) stanza.griglia[key] = { tipo: 'vuoto' };
     }
   }
+}
+
+function isModalitaVisualizzazione() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return !(urlParams.get('mode') === 'modifica');
 }
 
 function debounce(func, wait) {
@@ -58,6 +90,7 @@ function debounce(func, wait) {
 // ---------------------------------------------------------
 function renderTabsStanze() {
   const container = document.getElementById('roomsTabs');
+  if (!container) return;
   container.innerHTML = '';
 
   appState.stanze.forEach((stanza, idx) => {
@@ -71,16 +104,22 @@ function renderTabsStanze() {
   });
 
   const stanza = getStanzaCorrente();
-  document.getElementById('roomRows').value = stanza.righe;
-  document.getElementById('roomCols').value = stanza.colonne;
+  if (stanza) {
+    const inputRows = document.getElementById('roomRows');
+    const inputCols = document.getElementById('roomCols');
+    if (inputRows) inputRows.value = stanza.righe;
+    if (inputCols) inputCols.value = stanza.colonne;
+  }
 }
 
 function cambiaStanza(idx) {
   appState.stanzaAttivaIdx = idx;
   selezioni.clear();
   inizializzaStanzaAttiva();
-  renderTabsStanze();
-  aggiornaPannelloEditor();
+  if (!isModalitaVisualizzazione()) {
+    renderTabsStanze();
+    aggiornaPannelloEditor();
+  }
   renderGriglia();
 }
 
@@ -114,6 +153,8 @@ function eliminaStanza(idx) {
 function renderCategorie() {
   const container = document.getElementById('categoriesList');
   const select = document.getElementById('bachecaCategorySelect');
+  if (!container || !select) return;
+
   container.innerHTML = '';
   select.innerHTML = '';
 
@@ -162,12 +203,15 @@ function getColoreCategoria(nomeCategoria) {
 }
 
 // ---------------------------------------------------------
-// RENDER GRIGLIA E CALCOLO TOTALI BACHECA
+// RENDER GRIGLIA
 // ---------------------------------------------------------
 function renderGriglia() {
   const stanza = getStanzaCorrente();
   const container = document.getElementById('roomGrid');
-  
+  if (!container || !stanza) return;
+
+  const isViewOnly = isModalitaVisualizzazione();
+
   container.style.gridTemplateRows = `repeat(${stanza.righe}, 1fr)`;
   container.style.gridTemplateColumns = `repeat(${stanza.colonne}, 1fr)`;
   container.innerHTML = '';
@@ -182,7 +226,7 @@ function renderGriglia() {
       const cell = stanza.griglia[key] || { tipo: 'vuoto' };
 
       const tile = document.createElement('div');
-      tile.className = 'tile' + (selezioni.has(key) ? ' selected' : '');
+      tile.className = 'tile' + (!isViewOnly && selezioni.has(key) ? ' selected' : '');
       tile.dataset.key = key;
       tile.dataset.r = r;
       tile.dataset.c = c;
@@ -192,34 +236,35 @@ function renderGriglia() {
       } else if (cell.tipo === 'bacheca') {
         tile.style.backgroundColor = getColoreCategoria(cell.categoria);
 
-        // Input numerico digitabile dentro la cella
         const input = document.createElement('input');
         input.type = 'number';
         input.className = 'tile-input';
         input.value = cell.valore !== undefined ? cell.valore : '';
 
-        input.addEventListener('input', (e) => {
-          stanza.griglia[key].valore = e.target.value;
-          aggiornaTotaleBachecheSilent(stanza);
-        });
+        if (isViewOnly) {
+          input.readOnly = true;
+          input.style.cursor = 'default';
+        } else {
+          input.addEventListener('input', (e) => {
+            stanza.griglia[key].valore = e.target.value;
+            aggiornaTotaleBachecheSilent(stanza);
+          });
 
-        // Quando si clicca o si va in focus sul campo di testo, seleziona la cella e mostra il pannello
-        const gestisciSelezioneCella = (e) => {
-          e.stopPropagation(); // Evita di avviare il drag della griglia
-          
-          if (!e.shiftKey && !e.ctrlKey) {
-            selezioni.clear();
-            tileElements.forEach(t => t.classList.remove('selected'));
-          }
-          
-          selezioni.add(key);
-          tile.classList.add('selected');
-          aggiornaPannelloEditor();
-        };
+          const gestisciSelezioneCella = (e) => {
+            e.stopPropagation();
+            if (!e.shiftKey && !e.ctrlKey) {
+              selezioni.clear();
+              tileElements.forEach(t => t.classList.remove('selected'));
+            }
+            selezioni.add(key);
+            tile.classList.add('selected');
+            aggiornaPannelloEditor();
+          };
 
-        input.addEventListener('focus', gestisciSelezioneCella);
-        input.addEventListener('pointerdown', gestisciSelezioneCella);
-        input.addEventListener('mousedown', gestisciSelezioneCella);
+          input.addEventListener('focus', gestisciSelezioneCella);
+          input.addEventListener('pointerdown', gestisciSelezioneCella);
+          input.addEventListener('mousedown', gestisciSelezioneCella);
+        }
 
         tile.appendChild(input);
       } else {
@@ -236,7 +281,9 @@ function renderGriglia() {
   container.appendChild(fragment);
 }
 
-// Calcola la somma dei valori e trova la cella in alto a sinistra per ogni bacheca unita
+// ---------------------------------------------------------
+// CALCOLO TOTALI E UNIONE BACHECHE
+// ---------------------------------------------------------
 function calcolaTotaliBachecheUnite(stanza) {
   const visitati = new Set();
   const totaliBacheche = {};
@@ -258,7 +305,7 @@ function calcolaTotaliBachecheUnite(stanza) {
           const currCell = stanza.griglia[currKey];
 
           gruppo.push(curr);
-          
+
           const val = parseInt(currCell.valore);
           if (!isNaN(val)) {
             sommaTotale += val;
@@ -286,10 +333,9 @@ function calcolaTotaliBachecheUnite(stanza) {
           });
         }
 
-        // Trova la cella più in alto a sinistra del gruppo unito
         gruppo.sort((a, b) => (a.r === b.r ? a.c - b.c : a.r - b.r));
         const topLeftKey = `${gruppo[0].r}_${gruppo[0].c}`;
-        
+
         totaliBacheche[topLeftKey] = sommaTotale;
       }
     }
@@ -298,14 +344,11 @@ function calcolaTotaliBachecheUnite(stanza) {
   return totaliBacheche;
 }
 
-// Aggiorna in tempo reale il badge mantenendolo solo sull'angolo in alto a sinistra
 function aggiornaTotaleBachecheSilent(stanza) {
   const totali = calcolaTotaliBachecheUnite(stanza);
-  
-  // Rimuove tutti i badge esistenti
+
   document.querySelectorAll('.bacheca-total-badge').forEach(el => el.remove());
 
-  // Inserisce il badge esclusivamente nella cella Top-Left del blocco
   Object.keys(totali).forEach(key => {
     const tile = document.querySelector(`.tile[data-key="${key}"]`);
     if (tile && totali[key] > 0) {
@@ -344,7 +387,7 @@ function calcolaUnioneEBordi(tile, r, c, cell, stanza, totaliBacheche) {
     tile.style.borderLeft = hasLeft ? 'none' : '1px solid rgba(0,0,0,0.4)';
   } else if (cell.tipo === 'bacheca') {
     const wWidth = '3px';
-    const wColor = 'var(--wood-frame)';
+    const wColor = 'var(--wood-frame, #8b5a2b)';
 
     tile.style.borderTop = hasTop ? 'none' : `${wWidth} solid ${wColor}`;
     tile.style.borderRight = hasRight ? 'none' : `${wWidth} solid ${wColor}`;
@@ -366,6 +409,7 @@ function calcolaUnioneEBordi(tile, r, c, cell, stanza, totaliBacheche) {
 // ---------------------------------------------------------
 function setupDragSelection() {
   const grid = document.getElementById('roomGrid');
+  if (!grid) return;
 
   grid.addEventListener('pointerdown', (e) => {
     if (e.target.tagName === 'INPUT') return;
@@ -385,7 +429,7 @@ function setupDragSelection() {
 
   grid.addEventListener('pointermove', (e) => {
     if (!isMouseDown) return;
-    
+
     const target = document.elementFromPoint(e.clientX, e.clientY);
     const tile = target ? target.closest('.tile') : null;
 
@@ -442,6 +486,7 @@ function deselezionaTutto() {
 function aggiornaPannelloEditor() {
   const info = document.getElementById('selectionInfo');
   const form = document.getElementById('editorForm');
+  if (!info || !form) return;
 
   if (selezioni.size === 0) {
     info.innerText = "Nessuna cella selezionata.";
@@ -472,8 +517,8 @@ function applicaASelezione() {
       stanza.griglia[key] = { tipo: 'muro', colore: coloreMuro };
     } else if (tipo === 'bacheca') {
       const vecchioValore = stanza.griglia[key]?.valore || '';
-      stanza.griglia[key] = { 
-        tipo: 'bacheca', 
+      stanza.griglia[key] = {
+        tipo: 'bacheca',
         categoria: catBacheca,
         valore: vecchioValore
       };
@@ -504,7 +549,7 @@ function esportaJSON() {
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
   const a = document.createElement('a');
   a.href = dataStr;
-  a.download = 'layout_bacheche.json';
+  a.download = 'bacheca.json';
   a.click();
 }
 
