@@ -23,22 +23,43 @@ let tileElements = [];
 // ---------------------------------------------------------
 // INIZIALIZZAZIONE & CARICAMENTO JSON AUTOMATICO
 // ---------------------------------------------------------
-async function init() {
-  // Prova a caricare il layout da file JSON nel repository
-  await caricaLayoutDaRepo();
+// Stato per tracciare se siamo in visualizzazione o modifica
+let isViewMode = true;
 
-  if (isModalitaVisualizzazione()) {
-    // Applica lo stile visivo per la sola consultazione
+async function init() {
+  await caricaLayoutDaRepo();
+  
+  // Applica lo stato visivo iniziale
+  aggiornaInterfacciaModalita();
+
+  renderGriglia();
+  window.addEventListener('resize', debounce(renderGriglia, 150));
+}
+
+// Funzione per alternare la modalità dal tasto
+function toggleModalita() {
+  isViewMode = !isViewMode;
+  selezioni.clear(); // Puliamo eventuali selezioni
+  
+  aggiornaInterfacciaModalita();
+  renderGriglia();
+}
+
+function aggiornaInterfacciaModalita() {
+  const btn = document.getElementById('btnToggleMode');
+  
+  if (isViewMode) {
     document.body.classList.add('view-only-mode');
+    if (btn) btn.innerHTML = '✏️ Passa a Modifica';
   } else {
-    // Inizializza i controlli dell'editor solo in modalità modifica
+    document.body.classList.remove('view-only-mode');
+    if (btn) btn.innerHTML = '👁️ Passa a Visualizzazione';
+    
+    // Inizializza i controlli dell'editor quando si passa a modifica
     renderTabsStanze();
     renderCategorie();
     setupDragSelection();
   }
-
-  renderGriglia();
-  window.addEventListener('resize', debounce(renderGriglia, 150));
 }
 
 async function caricaLayoutDaRepo() {
@@ -210,8 +231,6 @@ function renderGriglia() {
   const container = document.getElementById('roomGrid');
   if (!container || !stanza) return;
 
-  const isViewOnly = isModalitaVisualizzazione();
-
   container.style.gridTemplateRows = `repeat(${stanza.righe}, 1fr)`;
   container.style.gridTemplateColumns = `repeat(${stanza.colonne}, 1fr)`;
   container.innerHTML = '';
@@ -226,7 +245,7 @@ function renderGriglia() {
       const cell = stanza.griglia[key] || { tipo: 'vuoto' };
 
       const tile = document.createElement('div');
-      tile.className = 'tile' + (!isViewOnly && selezioni.has(key) ? ' selected' : '');
+      tile.className = 'tile' + (!isViewMode && selezioni.has(key) ? ' selected' : '');
       tile.dataset.key = key;
       tile.dataset.r = r;
       tile.dataset.c = c;
@@ -241,7 +260,7 @@ function renderGriglia() {
         input.className = 'tile-input';
         input.value = cell.valore !== undefined ? cell.valore : '';
 
-        if (isViewOnly) {
+        if (isViewMode) {
           input.readOnly = true;
           input.style.cursor = 'default';
         } else {
