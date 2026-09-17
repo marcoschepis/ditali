@@ -89,8 +89,8 @@
         <!-- 3. SALVATAGGIO / CARICAMENTO -->
         <div class="card-section">
             <h3>💾 Salva / Carica</h3>
-            <button onclick="esportaJSON()">📥 Esporta JSON</button>
             <button onclick="document.getElementById('importInput').click()" class="btn-sec">📤 Importa JSON</button>
+            <button onclick="salvaSuGitHub()" class="btn-primary">🌐 Salva</button>
             <input type="file" id="importInput" accept=".json" style="display:none" onchange="importaJSON(event)">
         </div>
 

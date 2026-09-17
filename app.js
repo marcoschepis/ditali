@@ -619,7 +619,7 @@ async function salvaSuGitHub() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        message: "Update layout.json via web editor",
+        message: "Update bacheca.json via web editor",
         content: contentBase64,
         sha: sha ? sha : undefined,
         branch: GITHUB_CONFIG.branch
