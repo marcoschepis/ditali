@@ -571,4 +571,72 @@ function importaJSON(e) {
   fileReader.readAsText(e.target.files[0]);
 }
 
+
+// ---------------------------------------------------------
+// SAVE TO GITHUB
+// ---------------------------------------------------------
+// Configurazione per le API di GitHub
+const GITHUB_CONFIG = {
+  owner: "marcoschepis",
+  repo: "ditali",
+  path: "bacheca.json",
+  branch: "main"
+};
+
+async function salvaSuGitHub() {
+  // Chiede il Personal Access Token di GitHub se non è già salvato in sessione
+  let token = sessionStorage.getItem('gh_token');
+  if (!token) {
+    token = prompt("Inserisci il tuo Personal Access Token (PAT) di GitHub:");
+    if (!token) return;
+    sessionStorage.setItem('gh_token', token);
+  }
+
+  const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
+
+  try {
+    // 1. Recupera lo SHA del file esistente (obbligatorio per sovrascriverlo tramite API)
+    let sha = "";
+    const getRes = await fetch(url, {
+      headers: { "Authorization": `token ${token}` }
+    });
+    
+    if (getRes.ok) {
+      const fileData = await getRes.json();
+      sha = fileData.sha;
+    }
+
+    // 2. Prepara il contenuto JSON codificato in Base64
+    const jsonContent = JSON.stringify(appState, null, 2);
+    // encodeURIComponent + unescape serve per gestire correttamente i caratteri UTF-8/emoji
+    const contentBase64 = btoa(unescape(encodeURIComponent(jsonContent)));
+
+    // 3. Invia la richiesta di aggiornamento/commit
+    const putRes = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Authorization": `token ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: "Update layout.json via web editor",
+        content: contentBase64,
+        sha: sha ? sha : undefined,
+        branch: GITHUB_CONFIG.branch
+      })
+    });
+
+    if (putRes.ok) {
+      alert(" Layout salvato con successo su GitHub!");
+    } else {
+      const errData = await putRes.json();
+      alert(` Errore durante il salvataggio: ${errData.message}`);
+      if (putRes.status === 401) sessionStorage.removeItem('gh_token'); // Token errato o scaduto
+    }
+  } catch (err) {
+    console.error(err);
+    alert(" Si è verificato un errore di rete durante il salvataggio.");
+  }
+}
+
 window.onload = init;
