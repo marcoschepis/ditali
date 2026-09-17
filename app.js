@@ -7,7 +7,7 @@ let appState = {
   ],
   stanze: [
     {
-      nome: "Soggiorno",
+      nome: "Scala",
       righe: 10,
       colonne: 14,
       griglia: {}
@@ -45,7 +45,6 @@ function inizializzaStanzaAttiva() {
   }
 }
 
-// Utility Debounce per non affaticare la CPU al resize
 function debounce(func, wait) {
   let timeout;
   return function(...args) {
@@ -163,18 +162,18 @@ function getColoreCategoria(nomeCategoria) {
 }
 
 // ---------------------------------------------------------
-// RENDER GRIGLIA ULTRA PERFORMANTE E ADATTIVA
+// RENDER GRIGLIA E CALCOLO TOTALI BACHECA
 // ---------------------------------------------------------
 function renderGriglia() {
   const stanza = getStanzaCorrente();
   const container = document.getElementById('roomGrid');
   
-  // Imposta layout fluido
   container.style.gridTemplateRows = `repeat(${stanza.righe}, 1fr)`;
   container.style.gridTemplateColumns = `repeat(${stanza.colonne}, 1fr)`;
   container.innerHTML = '';
   tileElements = [];
 
+  const totaliBacheche = calcolaTotaliBachecheUnite(stanza);
   const fragment = document.createDocumentFragment();
 
   for (let r = 0; r < stanza.righe; r++) {
@@ -192,11 +191,42 @@ function renderGriglia() {
         tile.style.backgroundColor = cell.colore || '#334155';
       } else if (cell.tipo === 'bacheca') {
         tile.style.backgroundColor = getColoreCategoria(cell.categoria);
+
+        // Input numerico digitabile dentro la cella
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'tile-input';
+        input.value = cell.valore !== undefined ? cell.valore : '';
+
+        input.addEventListener('input', (e) => {
+          stanza.griglia[key].valore = e.target.value;
+          aggiornaTotaleBachecheSilent(stanza);
+        });
+
+        // Quando si clicca o si va in focus sul campo di testo, seleziona la cella e mostra il pannello
+        const gestisciSelezioneCella = (e) => {
+          e.stopPropagation(); // Evita di avviare il drag della griglia
+          
+          if (!e.shiftKey && !e.ctrlKey) {
+            selezioni.clear();
+            tileElements.forEach(t => t.classList.remove('selected'));
+          }
+          
+          selezioni.add(key);
+          tile.classList.add('selected');
+          aggiornaPannelloEditor();
+        };
+
+        input.addEventListener('focus', gestisciSelezioneCella);
+        input.addEventListener('pointerdown', gestisciSelezioneCella);
+        input.addEventListener('mousedown', gestisciSelezioneCella);
+
+        tile.appendChild(input);
       } else {
         tile.style.backgroundColor = '#1e293b';
       }
 
-      calcolaUnioneEBordi(tile, r, c, cell, stanza);
+      calcolaUnioneEBordi(tile, r, c, cell, stanza, totaliBacheche);
 
       fragment.appendChild(tile);
       tileElements.push(tile);
@@ -206,7 +236,88 @@ function renderGriglia() {
   container.appendChild(fragment);
 }
 
-function calcolaUnioneEBordi(tile, r, c, cell, stanza) {
+// Calcola la somma dei valori e trova la cella in alto a sinistra per ogni bacheca unita
+function calcolaTotaliBachecheUnite(stanza) {
+  const visitati = new Set();
+  const totaliBacheche = {};
+
+  for (let r = 0; r < stanza.righe; r++) {
+    for (let c = 0; c < stanza.colonne; c++) {
+      const key = `${r}_${c}`;
+      const cell = stanza.griglia[key];
+
+      if (cell && cell.tipo === 'bacheca' && !visitati.has(key)) {
+        const coda = [{ r, c }];
+        const gruppo = [];
+        let sommaTotale = 0;
+        visitati.add(key);
+
+        while (coda.length > 0) {
+          const curr = coda.shift();
+          const currKey = `${curr.r}_${curr.c}`;
+          const currCell = stanza.griglia[currKey];
+
+          gruppo.push(curr);
+          
+          const val = parseInt(currCell.valore);
+          if (!isNaN(val)) {
+            sommaTotale += val;
+          }
+
+          const vicini = [
+            { r: curr.r - 1, c: curr.c },
+            { r: curr.r + 1, c: curr.c },
+            { r: curr.r, c: curr.c - 1 },
+            { r: curr.r, c: curr.c + 1 }
+          ];
+
+          vicini.forEach(v => {
+            const vKey = `${v.r}_${v.c}`;
+            const vCell = stanza.griglia[vKey];
+            if (
+              vCell &&
+              vCell.tipo === 'bacheca' &&
+              vCell.categoria === cell.categoria &&
+              !visitati.has(vKey)
+            ) {
+              visitati.add(vKey);
+              coda.push(v);
+            }
+          });
+        }
+
+        // Trova la cella più in alto a sinistra del gruppo unito
+        gruppo.sort((a, b) => (a.r === b.r ? a.c - b.c : a.r - b.r));
+        const topLeftKey = `${gruppo[0].r}_${gruppo[0].c}`;
+        
+        totaliBacheche[topLeftKey] = sommaTotale;
+      }
+    }
+  }
+
+  return totaliBacheche;
+}
+
+// Aggiorna in tempo reale il badge mantenendolo solo sull'angolo in alto a sinistra
+function aggiornaTotaleBachecheSilent(stanza) {
+  const totali = calcolaTotaliBachecheUnite(stanza);
+  
+  // Rimuove tutti i badge esistenti
+  document.querySelectorAll('.bacheca-total-badge').forEach(el => el.remove());
+
+  // Inserisce il badge esclusivamente nella cella Top-Left del blocco
+  Object.keys(totali).forEach(key => {
+    const tile = document.querySelector(`.tile[data-key="${key}"]`);
+    if (tile && totali[key] > 0) {
+      const badge = document.createElement('div');
+      badge.className = 'bacheca-total-badge';
+      badge.innerText = `Tot: ${totali[key]}`;
+      tile.appendChild(badge);
+    }
+  });
+}
+
+function calcolaUnioneEBordi(tile, r, c, cell, stanza, totaliBacheche) {
   if (cell.tipo === 'vuoto') return;
 
   const top = stanza.griglia[`${r-1}_${c}`];
@@ -239,16 +350,26 @@ function calcolaUnioneEBordi(tile, r, c, cell, stanza) {
     tile.style.borderRight = hasRight ? 'none' : `${wWidth} solid ${wColor}`;
     tile.style.borderBottom = hasBottom ? 'none' : `${wWidth} solid ${wColor}`;
     tile.style.borderLeft = hasLeft ? 'none' : `${wWidth} solid ${wColor}`;
+
+    const key = `${r}_${c}`;
+    if (totaliBacheche && totaliBacheche[key] !== undefined && totaliBacheche[key] > 0) {
+      const badge = document.createElement('div');
+      badge.className = 'bacheca-total-badge';
+      badge.innerText = `Tot: ${totaliBacheche[key]}`;
+      tile.appendChild(badge);
+    }
   }
 }
 
 // ---------------------------------------------------------
-// NUOVA SELEZIONE RETTANGOLARE DINAMICA (CORRETTO RETRO-SELEZIONE)
+// SELEZIONE RETTANGOLARE
 // ---------------------------------------------------------
 function setupDragSelection() {
   const grid = document.getElementById('roomGrid');
 
   grid.addEventListener('pointerdown', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+
     const tile = e.target.closest('.tile');
     if (!tile) return;
 
@@ -265,7 +386,6 @@ function setupDragSelection() {
   grid.addEventListener('pointermove', (e) => {
     if (!isMouseDown) return;
     
-    // Trova la cella sotto il puntatore corrente anche se ci si sposta velocemente
     const target = document.elementFromPoint(e.clientX, e.clientY);
     const tile = target ? target.closest('.tile') : null;
 
@@ -289,7 +409,6 @@ function aggiornaSelezioneRettangolo(p1, p2) {
   const minC = Math.min(p1.c, p2.c);
   const maxC = Math.max(p1.c, p2.c);
 
-  // Calcola esattamente quali celle devono essere selezionate ora
   const coordinateCorrenti = new Set();
   for (let r = minR; r <= maxR; r++) {
     for (let c = minC; c <= maxC; c++) {
@@ -297,7 +416,6 @@ function aggiornaSelezioneRettangolo(p1, p2) {
     }
   }
 
-  // Aggiorna le classi CSS direttamente sugli elementi senza re-renderizzare l'intera griglia
   tileElements.forEach(tile => {
     const key = tile.dataset.key;
     const isInsideRect = coordinateCorrenti.has(key);
@@ -353,9 +471,11 @@ function applicaASelezione() {
     } else if (tipo === 'muro') {
       stanza.griglia[key] = { tipo: 'muro', colore: coloreMuro };
     } else if (tipo === 'bacheca') {
+      const vecchioValore = stanza.griglia[key]?.valore || '';
       stanza.griglia[key] = { 
         tipo: 'bacheca', 
-        categoria: catBacheca
+        categoria: catBacheca,
+        valore: vecchioValore
       };
     }
   });
@@ -378,7 +498,7 @@ function ridimensionaStanza() {
 }
 
 // ---------------------------------------------------------
-// EXPORT / IMPORT JSON COMPLETO
+// EXPORT / IMPORT JSON
 // ---------------------------------------------------------
 function esportaJSON() {
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
