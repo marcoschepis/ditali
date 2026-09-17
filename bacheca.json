@@ -84,7 +84,7 @@
         "1_5": {
           "tipo": "bacheca",
           "categoria": "Mondo",
-          "valore": ""
+          "valore": "5"
         },
         "1_6": {
           "tipo": "bacheca",
@@ -213,10 +213,14 @@
           "tipo": "vuoto"
         },
         "3_10": {
-          "tipo": "vuoto"
+          "tipo": "bacheca",
+          "categoria": "Europa",
+          "valore": "5"
         },
         "3_11": {
-          "tipo": "vuoto"
+          "tipo": "bacheca",
+          "categoria": "Europa",
+          "valore": ""
         },
         "3_12": {
           "tipo": "vuoto"
@@ -267,10 +271,14 @@
           "tipo": "vuoto"
         },
         "4_10": {
-          "tipo": "vuoto"
+          "tipo": "bacheca",
+          "categoria": "Europa",
+          "valore": ""
         },
         "4_11": {
-          "tipo": "vuoto"
+          "tipo": "bacheca",
+          "categoria": "Europa",
+          "valore": ""
         },
         "4_12": {
           "tipo": "vuoto"
