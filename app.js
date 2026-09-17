@@ -19,43 +19,40 @@ let selezioni = new Set();
 let isMouseDown = false;
 let dragStartCoords = null;
 let tileElements = [];
-
-// ---------------------------------------------------------
-// INIZIALIZZAZIONE & CARICAMENTO JSON AUTOMATICO
-// ---------------------------------------------------------
-// Stato per tracciare se siamo in visualizzazione o modifica
 let isViewMode = true;
 
+const GITHUB_CONFIG = {
+  owner: "marcoschepis",
+  repo: "ditali",
+  path: "bacheca.json",
+  branch: "main"
+};
+
+// ---------------------------------------------------------
+// INIZIALIZZAZIONE & STATO
+// ---------------------------------------------------------
 async function init() {
   await caricaLayoutDaRepo();
-  
-  // Applica lo stato visivo iniziale
   aggiornaInterfacciaModalita();
-
   renderGriglia();
   window.addEventListener('resize', debounce(renderGriglia, 150));
 }
 
-// Funzione per alternare la modalità dal tasto
 function toggleModalita() {
   isViewMode = !isViewMode;
-  selezioni.clear(); // Puliamo eventuali selezioni
-  
+  selezioni.clear();
   aggiornaInterfacciaModalita();
   renderGriglia();
 }
 
 function aggiornaInterfacciaModalita() {
   const btn = document.getElementById('btnToggleMode');
-  
   if (isViewMode) {
     document.body.classList.add('view-only-mode');
     if (btn) btn.innerHTML = '✏️ Passa a Modifica';
   } else {
     document.body.classList.remove('view-only-mode');
     if (btn) btn.innerHTML = '👁️ Passa a Visualizzazione';
-    
-    // Inizializza i controlli dell'editor quando si passa a modifica
     renderTabsStanze();
     renderCategorie();
     setupDragSelection();
@@ -73,7 +70,6 @@ async function caricaLayoutDaRepo() {
   } catch (err) {
     console.log("Nessun file bacheca.json trovato o errore nel caricamento. Uso lo stato predefinito.", err);
   }
-
   inizializzaStanzaAttiva();
 }
 
@@ -93,11 +89,6 @@ function inizializzaStanzaAttiva() {
   }
 }
 
-function isModalitaVisualizzazione() {
-  const urlParams = new URLSearchParams(window.location.search);
-  return !(urlParams.get('mode') === 'modifica');
-}
-
 function debounce(func, wait) {
   let timeout;
   return function(...args) {
@@ -107,7 +98,7 @@ function debounce(func, wait) {
 }
 
 // ---------------------------------------------------------
-// GESTIONE MULTI-STANZA
+// GESTIONE STANZE
 // ---------------------------------------------------------
 function renderTabsStanze() {
   const container = document.getElementById('roomsTabs');
@@ -119,7 +110,7 @@ function renderTabsStanze() {
     tab.className = `tab-room ${idx === appState.stanzaAttivaIdx ? 'active' : ''}`;
     tab.innerHTML = `
       <span onclick="cambiaStanza(${idx})">${stanza.nome}</span>
-      ${appState.stanze.length > 1 ? `<span class="del-room" onclick="eliminaStanza(${idx})">✕</span>` : ''}
+      ${!isViewMode && appState.stanze.length > 1 ? `<span class="del-room" onclick="eliminaStanza(${idx})">✕</span>` : ''}
     `;
     container.appendChild(tab);
   });
@@ -137,8 +128,8 @@ function cambiaStanza(idx) {
   appState.stanzaAttivaIdx = idx;
   selezioni.clear();
   inizializzaStanzaAttiva();
-  if (!isModalitaVisualizzazione()) {
-    renderTabsStanze();
+  renderTabsStanze();
+  if (!isViewMode) {
     aggiornaPannelloEditor();
   }
   renderGriglia();
@@ -168,8 +159,22 @@ function eliminaStanza(idx) {
   }
 }
 
+function ridimensionaStanza() {
+  const stanza = getStanzaCorrente();
+  stanza.righe = parseInt(document.getElementById('roomRows').value) || 10;
+  stanza.colonne = parseInt(document.getElementById('roomCols').value) || 14;
+
+  for (let r = 0; r < stanza.righe; r++) {
+    for (let c = 0; c < stanza.colonne; c++) {
+      const key = `${r}_${c}`;
+      if (!stanza.griglia[key]) stanza.griglia[key] = { tipo: 'vuoto' };
+    }
+  }
+  renderGriglia();
+}
+
 // ---------------------------------------------------------
-// CATEGORIE
+// GESTIONE CATEGORIE
 // ---------------------------------------------------------
 function renderCategorie() {
   const container = document.getElementById('categoriesList');
@@ -224,12 +229,14 @@ function getColoreCategoria(nomeCategoria) {
 }
 
 // ---------------------------------------------------------
-// RENDER GRIGLIA
+// RENDERING GRIGLIA & LOGICA VISIVA
 // ---------------------------------------------------------
 function renderGriglia() {
   const stanza = getStanzaCorrente();
   const container = document.getElementById('roomGrid');
   if (!container || !stanza) return;
+
+  renderTabsStanze();
 
   container.style.gridTemplateRows = `repeat(${stanza.righe}, 1fr)`;
   container.style.gridTemplateColumns = `repeat(${stanza.colonne}, 1fr)`;
@@ -300,9 +307,6 @@ function renderGriglia() {
   container.appendChild(fragment);
 }
 
-// ---------------------------------------------------------
-// CALCOLO TOTALI E UNIONE BACHECHE
-// ---------------------------------------------------------
 function calcolaTotaliBachecheUnite(stanza) {
   const visitati = new Set();
   const totaliBacheche = {};
@@ -424,14 +428,14 @@ function calcolaUnioneEBordi(tile, r, c, cell, stanza, totaliBacheche) {
 }
 
 // ---------------------------------------------------------
-// SELEZIONE RETTANGOLARE
+// INTERAZIONE & SELEZIONE
 // ---------------------------------------------------------
 function setupDragSelection() {
   const grid = document.getElementById('roomGrid');
   if (!grid) return;
 
   grid.addEventListener('pointerdown', (e) => {
-    if (e.target.tagName === 'INPUT') return;
+    if (isViewMode || e.target.tagName === 'INPUT') return;
 
     const tile = e.target.closest('.tile');
     if (!tile) return;
@@ -447,7 +451,7 @@ function setupDragSelection() {
   });
 
   grid.addEventListener('pointermove', (e) => {
-    if (!isMouseDown) return;
+    if (!isMouseDown || isViewMode) return;
 
     const target = document.elementFromPoint(e.clientX, e.clientY);
     const tile = target ? target.closest('.tile') : null;
@@ -499,9 +503,6 @@ function deselezionaTutto() {
   aggiornaPannelloEditor();
 }
 
-// ---------------------------------------------------------
-// APPLICAZIONE MODIFICHE
-// ---------------------------------------------------------
 function aggiornaPannelloEditor() {
   const info = document.getElementById('selectionInfo');
   const form = document.getElementById('editorForm');
@@ -547,22 +548,8 @@ function applicaASelezione() {
   renderGriglia();
 }
 
-function ridimensionaStanza() {
-  const stanza = getStanzaCorrente();
-  stanza.righe = parseInt(document.getElementById('roomRows').value) || 10;
-  stanza.colonne = parseInt(document.getElementById('roomCols').value) || 14;
-
-  for (let r = 0; r < stanza.righe; r++) {
-    for (let c = 0; c < stanza.colonne; c++) {
-      const key = `${r}_${c}`;
-      if (!stanza.griglia[key]) stanza.griglia[key] = { tipo: 'vuoto' };
-    }
-  }
-  renderGriglia();
-}
-
 // ---------------------------------------------------------
-// EXPORT / IMPORT JSON
+// EXPORT, IMPORT & SALVATAGGIO GITHUB
 // ---------------------------------------------------------
 function esportaJSON() {
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
@@ -590,20 +577,7 @@ function importaJSON(e) {
   fileReader.readAsText(e.target.files[0]);
 }
 
-
-// ---------------------------------------------------------
-// SAVE TO GITHUB
-// ---------------------------------------------------------
-// Configurazione per le API di GitHub
-const GITHUB_CONFIG = {
-  owner: "marcoschepis",
-  repo: "ditali",
-  path: "bacheca.json",
-  branch: "main"
-};
-
 async function salvaSuGitHub() {
-  // Chiede il Personal Access Token di GitHub se non è già salvato in sessione
   let token = sessionStorage.getItem('gh_token');
   if (!token) {
     token = prompt("Inserisci il tuo Personal Access Token (PAT) di GitHub:");
@@ -614,7 +588,6 @@ async function salvaSuGitHub() {
   const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
 
   try {
-    // 1. Recupera lo SHA del file esistente (obbligatorio per sovrascriverlo tramite API)
     let sha = "";
     const getRes = await fetch(url, {
       headers: { "Authorization": `token ${token}` }
@@ -625,12 +598,9 @@ async function salvaSuGitHub() {
       sha = fileData.sha;
     }
 
-    // 2. Prepara il contenuto JSON codificato in Base64
     const jsonContent = JSON.stringify(appState, null, 2);
-    // encodeURIComponent + unescape serve per gestire correttamente i caratteri UTF-8/emoji
     const contentBase64 = btoa(unescape(encodeURIComponent(jsonContent)));
 
-    // 3. Invia la richiesta di aggiornamento/commit
     const putRes = await fetch(url, {
       method: "PUT",
       headers: {
@@ -646,15 +616,15 @@ async function salvaSuGitHub() {
     });
 
     if (putRes.ok) {
-      alert(" Layout salvato con successo su GitHub!");
+      alert("Layout salvato con successo su GitHub!");
     } else {
       const errData = await putRes.json();
-      alert(` Errore durante il salvataggio: ${errData.message}`);
-      if (putRes.status === 401) sessionStorage.removeItem('gh_token'); // Token errato o scaduto
+      alert(`Errore durante il salvataggio: ${errData.message}`);
+      if (putRes.status === 401) sessionStorage.removeItem('gh_token');
     }
   } catch (err) {
     console.error(err);
-    alert(" Si è verificato un errore di rete durante il salvataggio.");
+    alert("Si è verificato un errore di rete durante il salvataggio.");
   }
 }
 

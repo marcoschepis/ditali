@@ -8,21 +8,23 @@
 </head>
 <body>
 
-  <!-- SELETTORE STANZE -->
+  <!-- SELETTORE STANZE E MODALITÀ -->
   <div class="rooms-bar">
     <div class="rooms-tabs-container">
       <span class="rooms-label">Stanze:</span>
       <div id="roomsTabs" class="rooms-tabs"></div>
     </div>
-    <button id="btnToggleMode" onclick="toggleModalita()" class="btn-mode-toggle">✏️ Passa a Modifica</button>
-    <button onclick="creaNuovaStanza()" class="btn-add-room">+ Nuova Stanza</button>
+    <div class="rooms-actions">
+      <button id="btnToggleMode" onclick="toggleModalita()" class="btn-mode-toggle">✏️ Passa a Modifica</button>
+      <button onclick="creaNuovaStanza()" class="btn-add-room editor-only">+ Nuova Stanza</button>
+    </div>
   </div>
 
   <div class="main-layout">
     
     <!-- MAPPA STANZA -->
     <section class="room-panel">
-      <div class="controls">
+      <div class="controls editor-only">
         <label>Righe: <input type="number" id="roomRows" value="10" min="5" max="40" onchange="ridimensionaStanza()"></label>
         <label>Colonne: <input type="number" id="roomCols" value="14" min="5" max="40" onchange="ridimensionaStanza()"></label>
         <span class="hint">💡 Parti da in alto a sinistra. Trascina col mouse per selezionare più celle. Due celle uguali vicine si uniranno.</span>
@@ -34,66 +36,67 @@
     <!-- SIDEBAR CONTROLLI -->
     <aside class="sidebar">
       
-        <!-- 1. GESTIONE CATEGORIE CON COLORE ASSOCIATO -->
-        <div class="card-section">
-            <h3>🏷️ Categorie Bacheche</h3>
-            
-            <div class="cat-form">
-            <input type="text" id="newCatInput" placeholder="Nome (es. Italia, Europa...)">
-            <div class="cat-color-pick">
-                <input type="color" id="newCatColor" value="#0284c7" title="Scegli colore categoria">
-                <button onclick="aggiungiCategoria()">Aggiungi</button>
-            </div>
-            </div>
-
-            <div id="categoriesList" class="categories-list"></div>
+      <!-- 1. GESTIONE CATEGORIE -->
+      <div class="card-section">
+        <h3>🏷️ Categorie Bacheche</h3>
+        
+        <div class="cat-form">
+          <input type="text" id="newCatInput" placeholder="Nome (es. Italia, Europa...)">
+          <div class="cat-color-pick">
+            <input type="color" id="newCatColor" value="#0284c7" title="Scegli colore categoria">
+            <button onclick="aggiungiCategoria()">Aggiungi</button>
+          </div>
         </div>
 
-        <!-- 2. EDITOR SELEZIONE -->
-        <div class="card-section">
-            <h3>⚙️ Applica alla Selezione</h3>
-            
-            <div id="selectionInfo" class="info-msg">
-            Nessuna cella selezionata.
-            </div>
+        <div id="categoriesList" class="categories-list"></div>
+      </div>
 
-            <div id="editorForm" style="display: none;">
-            <label>Tipo Elemento:</label>
-            <select id="tileType" onchange="toggleTipoInputs()">
-                <option value="vuoto">⬜ Spazio Vuoto</option>
-                <option value="muro">🧱 Muro</option>
-                <option value="bacheca">🖼️ Bacheca</option>
-            </select>
-
-            <!-- OPZIONI MURO -->
-            <div id="muroOptions" style="display: none;" class="opt-group">
-                <label>Colore Muro:
-                <input type="color" id="muroColor" value="#FFFFFF" height="20" title="Scegli colore muro">
-                </label>
-            </div>
-
-            <!-- OPZIONI BACHECA -->
-            <div id="bachecaOptions" style="display: none;" class="opt-group">
-                <label>Seleziona Categoria:
-                <select id="bachecaCategorySelect"></select>
-                </label>
-                <p class="cat-color-preview-text">
-                Il colore dello sfondo è legato alla categoria scelta.
-                </p>
-            </div>
-
-            <button onclick="applicaASelezione()" class="btn-apply">Applica Selezione</button>
-            <button onclick="deselezionaTutto()" class="btn-sec" style="width:100%; margin-top: 6px;">Annulla Selezione</button>
-            </div>
+      <!-- 2. EDITOR SELEZIONE -->
+      <div class="card-section">
+        <h3>⚙️ Applica alla Selezione</h3>
+        
+        <div id="selectionInfo" class="info-msg">
+          Nessuna cella selezionata.
         </div>
 
-        <!-- 3. SALVATAGGIO / CARICAMENTO -->
-        <div class="card-section">
-            <h3>💾 Salva / Carica</h3>
-            <button onclick="document.getElementById('importInput').click()" class="btn-sec">📤 Importa JSON</button>
-            <button onclick="salvaSuGitHub()" class="btn-primary">🌐 Salva</button>
-            <input type="file" id="importInput" accept=".json" style="display:none" onchange="importaJSON(event)">
+        <div id="editorForm" style="display: none;">
+          <label for="tileType">Tipo Elemento:</label>
+          <select id="tileType" onchange="toggleTipoInputs()">
+            <option value="vuoto">⬜ Spazio Vuoto</option>
+            <option value="muro">🧱 Muro</option>
+            <option value="bacheca">🖼️ Bacheca</option>
+          </select>
+
+          <!-- OPZIONI MURO -->
+          <div id="muroOptions" style="display: none;" class="opt-group">
+            <label for="muroColor">Colore Muro:
+              <input type="color" id="muroColor" value="#334155" title="Scegli colore muro">
+            </label>
+          </div>
+
+          <!-- OPZIONI BACHECA -->
+          <div id="bachecaOptions" style="display: none;" class="opt-group">
+            <label for="bachecaCategorySelect">Seleziona Categoria:
+              <select id="bachecaCategorySelect"></select>
+            </label>
+            <p class="cat-color-preview-text">
+              Il colore dello sfondo è legato alla categoria scelta.
+            </p>
+          </div>
+
+          <button onclick="applicaASelezione()" class="btn-apply">Applica Selezione</button>
+          <button onclick="deselezionaTutto()" class="btn-sec full-width-mt">Annulla Selezione</button>
         </div>
+      </div>
+
+      <!-- 3. SALVATAGGIO / CARICAMENTO -->
+      <div class="card-section">
+        <h3>💾 Salva / Carica</h3>
+        <button onclick="esportaJSON()" class="btn-sec full-width-mb">📥 Esporta JSON</button>
+        <button onclick="document.getElementById('importInput').click()" class="btn-sec full-width-mb">📤 Importa JSON</button>
+        <button onclick="salvaSuGitHub()" class="btn-primary full-width">🌐 Salva su GitHub</button>
+        <input type="file" id="importInput" accept=".json" style="display:none" onchange="importaJSON(event)">
+      </div>
 
     </aside>
 

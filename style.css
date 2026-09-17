@@ -15,15 +15,7 @@ body {
   box-sizing: border-box;
 }
 
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 8px;
-}
-
+/* BOTTONI GENERICI UTILITY */
 button {
   background: #0284c7;
   color: white;
@@ -34,10 +26,15 @@ button {
   font-weight: 600;
 }
 
+button.btn-primary { background: #0284c7; }
 button.btn-sec { background: #475569; }
 button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 10px; }
 
-/* BARRA STANZE */
+.full-width { width: 100%; }
+.full-width-mt { width: 100%; margin-top: 6px; }
+.full-width-mb { width: 100%; margin-bottom: 6px; }
+
+/* BARRA SUPERIORE STANZE */
 .rooms-bar {
   display: flex;
   justify-content: space-between;
@@ -98,6 +95,12 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   color: #ef4444;
 }
 
+.rooms-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .btn-add-room {
   background: #15803d;
   font-size: 0.85rem;
@@ -105,14 +108,28 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   white-space: nowrap;
 }
 
+.btn-mode-toggle {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-mode-toggle:hover {
+  background-color: #2563eb;
+}
+
+/* LAYOUT PRINCIPALE */
 .main-layout {
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 16px;
-  height: calc(100vh - 120px); /* Riempie lo schermo */
+  height: calc(100vh - 120px);
 }
 
-/* CONTAINER MAPPA ADATTIVO */
 .room-panel {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -144,7 +161,7 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   color: #94a3b8;
 }
 
-/* GRIGLIA FLUIDA E VELOCE */
+/* GRIGLIA STANZA */
 .room-grid {
   display: grid;
   gap: 0;
@@ -160,8 +177,8 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   touch-action: none;
 }
 
-/* Tile leggera senza box-shadow o transizioni lente */
 .tile {
+  position: relative;
   box-sizing: border-box;
   background: #1e293b;
   border: 1px dashed rgba(255, 255, 255, 0.05);
@@ -171,6 +188,52 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   outline: 2px solid #f59e0b !important;
   outline-offset: -2px;
   z-index: 2;
+}
+
+/* INPUT CELLE BACHECA */
+.tile-input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.9);
+  padding: 0;
+  margin: 0;
+  cursor: text;
+  z-index: 4;
+  -moz-appearance: textfield;
+}
+
+.tile-input::-webkit-outer-spin-button,
+.tile-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tile-input:focus {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+}
+
+.bacheca-total-badge {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  background: rgba(15, 23, 42, 0.95);
+  color: #facc15;
+  font-size: 0.68rem;
+  font-weight: bold;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 /* SIDEBAR E PANNELLI */
@@ -203,10 +266,6 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   padding: 8px;
   border-radius: 6px;
   border: 1px solid var(--border-color);
-}
-
-.cat-form input[type="text"] {
-  margin: 0;
 }
 
 .cat-color-pick {
@@ -294,78 +353,12 @@ select, input[type="text"], input[type="color"] {
   font-size: 0.85rem;
 }
 
-/* Input del valore direttamente dentro la cella della bacheca */
-.tile-input {
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #ffffff;
-  font-size: 0.85rem;
-  font-weight: bold;
-  text-align: center;
-  text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.9);
-  padding: 0;
-  margin: 0;
-  cursor: text;
-  z-index: 4;
-  -moz-appearance: textfield;
-}
-
-/* Rimuove le freccette nei campi number */
-.tile-input::-webkit-outer-spin-button,
-.tile-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.tile-input:focus {
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: 4px;
-}
-
-/* Garantisce il posizionamento corretto del badge rispetto alla singola cella */
-.tile {
-  position: relative;
-}
-
-/* Badge in alto a sinistra della bacheca */
-.bacheca-total-badge {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  background: rgba(15, 23, 42, 0.95);
-  color: #facc15;
-  font-size: 0.68rem;
-  font-weight: bold;
-  padding: 1px 5px;
-  border-radius: 3px;
-  border: 1px solid rgba(250, 204, 21, 0.5);
-  pointer-events: none;
-  z-index: 10;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-}
-
-/* Visualizzazione */
-/* Nasconde gli elementi dell'editor quando in modalità visualizzazione */
+/* VISUALIZZAZIONE / MODIFICA MODES */
 body.view-only-mode .sidebar,
-body.view-only-mode .editor-controls,
 body.view-only-mode .editor-only {
   display: none !important;
 }
 
-/* Stile per il pulsante di switch */
-.btn-mode-toggle {
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.btn-mode-toggle:hover {
-  background-color: #2563eb;
+body.view-only-mode .main-layout {
+  grid-template-columns: 1fr;
 }
