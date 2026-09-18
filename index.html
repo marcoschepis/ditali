@@ -46,8 +46,8 @@
       <!-- MENU A SCHEDE PER MOBILE & DESKTOP -->
       <div class="sidebar-tabs">
         <button class="side-tab" onclick="mostraSideTab('tabStanza')">📐 Dimensioni</button>
-        <button class="side-tab active" onclick="mostraSideTab('tabSelezione')">⚙️ Selezione</button>
         <button class="side-tab" onclick="mostraSideTab('tabCategorie')">🏷️ Categorie</button>
+        <button class="side-tab active" onclick="mostraSideTab('tabSelezione')">⚙️ Selezione</button>
         <button class="side-tab" onclick="mostraSideTab('tabSalva')">💾 Salva</button>
       </div>
 
@@ -118,9 +118,9 @@
       <!-- TAB 3: SALVATAGGIO / CARICAMENTO -->
       <div id="tabSalva" class="card-section tab-content">
         <h3>💾 Salva / Carica</h3>
-        <button onclick="esportaJSON()" class="btn-sec full-width-mb">📥 Esporta JSON Locale</button>
+        <button onclick="esportaJSON()" class="btn-sec full-width-mb">📥 Esporta JSON</button>
         <button onclick="document.getElementById('importInput').click()" class="btn-sec full-width-mb">📤 Importa JSON</button>
-        <button onclick="salvaSuGitHub()" class="btn-primary full-width">🌐 Salva su GitHub</button>
+        <button onclick="salvaSuGitHub()" class="btn-primary full-width">🌐 Salva online</button>
         <input type="file" id="importInput" accept=".json" style="display:none" onchange="importaJSON(event)">
       </div>
 

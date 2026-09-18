@@ -400,7 +400,7 @@ function renderBadgesCentrati(stanza, container) {
 
         const badge = document.createElement('div');
         badge.className = 'bacheca-total-badge';
-        badge.innerText = totaleAttuale !== '' ? `Tot: ${totaleAttuale}` : 'Tot: 0';
+        badge.innerText = totaleAttuale !== '' ? `${totaleAttuale}` : '0';
         badge.style.left = `${centerC}%`;
         badge.style.top = `${centerR}%`;
         badge.style.cursor = isViewMode ? 'default' : 'pointer';
