@@ -35,7 +35,21 @@ async function init() {
   await caricaLayoutDaRepo();
   aggiornaInterfacciaModalita();
   renderGriglia();
-  window.addEventListener('resize', debounce(renderGriglia, 150));
+  // Blocca i re-render automatici della griglia quando la tastiera mobile è aperta
+  window.addEventListener('resize', () => {
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+      return; // NON ridisegnare la griglia se si sta scrivendo
+    }
+    renderGriglia();
+  });
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+        return;
+      }
+    });
+  }
 }
 
 function toggleModalita() {
