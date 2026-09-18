@@ -43,7 +43,7 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 6px 12px;
+  padding: 6px 6px;
   margin-bottom: 12px;
 }
 
@@ -54,7 +54,6 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   font-size: 0.85rem;
   padding: 2px 8px;
   border-radius: 12px;
-  margin-right: 6px;
   display: inline-flex;
   align-items: center;
 }
@@ -624,4 +623,35 @@ body.view-only-mode .main-layout {
   position: relative;
   height: 200px;
   width: 100%;
+}
+
+
+
+
+
+.color-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 4px;
+  background-color: rgba(15, 23, 42, 0.6);
+  border-radius: 8px;
+  border: 1px solid #334155;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #f8fafc;
+}
+
+.legend-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
 }

@@ -98,6 +98,9 @@ async function init() {
     if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
     renderGriglia();
   });
+
+  // Parti sempre dalla prima stanza all'avvio
+  cambiaStanza(0);
 }
 
 function toggleModalita() {
@@ -347,6 +350,7 @@ function renderGriglia() {
 
   container.appendChild(fragment);
   renderBadgesCentrati(stanza, container);
+  renderLegendaColori();
 }
 
 function calcolaUnioneEBordi(tile, r, c, cell, stanza) {
@@ -468,6 +472,32 @@ function renderBadgesCentrati(stanza, container) {
       }
     }
   }
+}
+
+function renderLegendaColori() {
+  const legendContainer = document.getElementById('colorLegend');
+  if (!legendContainer || !appState.categorie) return;
+
+  // Svuota la legenda esistente
+  legendContainer.innerHTML = '';
+
+  // Genera un pallino di colore e il relativo nome per ogni categoria
+  Object.entries(appState.categorie).forEach(([nome, cat]) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+
+    const colorBadge = document.createElement('span');
+    colorBadge.className = 'legend-color-dot';
+    colorBadge.style.backgroundColor = cat.colore || '#94a3b8';
+
+    const label = document.createElement('span');
+    label.className = 'legend-label';
+    label.textContent = cat.nome;
+
+    item.appendChild(colorBadge);
+    item.appendChild(label);
+    legendContainer.appendChild(item);
+  });
 }
 
 // ---------------------------------------------------------
@@ -623,11 +653,12 @@ function importaJSON(e) {
 }
 
 async function salvaSuGitHub() {
-  let token = sessionStorage.getItem('gh_token');
+  // Passaggio a localStorage per persistere il token tra le sessioni del browser
+  let token = localStorage.getItem('gh_token');
   if (!token) {
     token = prompt("Inserisci il tuo Personal Access Token (PAT) di GitHub:");
     if (!token) return;
-    sessionStorage.setItem('gh_token', token);
+    localStorage.setItem('gh_token', token.trim());
   }
 
   const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
@@ -665,7 +696,10 @@ async function salvaSuGitHub() {
     } else {
       const errData = await putRes.json();
       alert(`Errore durante il salvataggio: ${errData.message}`);
-      if (putRes.status === 401) sessionStorage.removeItem('gh_token');
+      // Se il token non è valido (401), lo rimuoviamo da localStorage così lo ric chiederà la prossima volta
+      if (putRes.status === 401) {
+        localStorage.removeItem('gh_token');
+      }
     }
   } catch (err) {
     console.error(err);
