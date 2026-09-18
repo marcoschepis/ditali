@@ -674,3 +674,211 @@ async function salvaSuGitHub() {
 }
 
 window.onload = init;
+
+
+
+
+
+
+// ---------------------------------------------------------
+// GESTIONE MODAL STATISTICHE
+// ---------------------------------------------------------
+// Variable globali per conservare i riferimenti ai grafici
+let chartCategorieInstance = null;
+let chartStanzeInstance = null;
+
+// ---------------------------------------------------------
+// APERTURA / CHIUSURA MODALE
+// ---------------------------------------------------------
+function apriModalStatistiche() {
+  const modal = document.getElementById('statsModal');
+  if (!modal) return;
+  modal.classList.add('open');
+  renderStatistiche();
+}
+
+function chiudiModalStatistiche(e) {
+  const modal = document.getElementById('statsModal');
+  if (modal) modal.classList.remove('open');
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') chiudiModalStatistiche();
+});
+
+// ---------------------------------------------------------
+// LOGICA E RENDERING DELLE STATISTICHE
+// ---------------------------------------------------------
+function calcolaDatiStatistiche() {
+  const perCategoria = {};
+  const perStanza = {};
+
+  appState.categorie.forEach(c => {
+    perCategoria[c.nome] = { totale: 0, colore: c.colore };
+  });
+
+  appState.stanze.forEach(stanza => {
+    let totStanza = 0;
+    if (stanza && stanza.griglia) {
+      const visitati = new Set();
+
+      for (let r = 0; r < stanza.righe; r++) {
+        for (let c = 0; c < stanza.colonne; c++) {
+          const key = `${r}_${c}`;
+          const cell = stanza.griglia[key];
+
+          if (cell && cell.tipo === 'bacheca' && !visitati.has(key)) {
+            const coda = [{ r, c }];
+            visitati.add(key);
+            const currentGruppoId = cell.gruppoId || null;
+            const val = parseInt(cell.totaleGruppo) || 0;
+
+            totStanza += val;
+
+            if (!perCategoria[cell.categoria]) {
+              perCategoria[cell.categoria] = { 
+                totale: 0, 
+                colore: getColoreCategoria(cell.categoria) 
+              };
+            }
+            perCategoria[cell.categoria].totale += val;
+
+            while (coda.length > 0) {
+              const curr = coda.shift();
+              const vicini = [
+                { r: curr.r - 1, c: curr.c },
+                { r: curr.r + 1, c: curr.c },
+                { r: curr.r, c: curr.c - 1 },
+                { r: curr.r, c: curr.c + 1 }
+              ];
+
+              vicini.forEach(v => {
+                const vKey = `${v.r}_${v.c}`;
+                const vCell = stanza.griglia[vKey];
+                if (
+                  vCell &&
+                  vCell.tipo === 'bacheca' &&
+                  vCell.categoria === cell.categoria &&
+                  (vCell.gruppoId || null) === currentGruppoId &&
+                  !visitati.has(vKey)
+                ) {
+                  visitati.add(vKey);
+                  coda.push(v);
+                }
+              });
+            }
+          }
+        }
+      }
+    }
+    perStanza[stanza.nome] = totStanza;
+  });
+
+  return { perCategoria, perStanza };
+}
+
+function renderStatistiche() {
+  const { perCategoria, perStanza } = calcolaDatiStatistiche();
+
+  // Aggiorna i contatori testuali principali
+  const totalDitali = Object.values(perStanza).reduce((a, b) => a + b, 0);
+  document.getElementById('statTotalCount').textContent = totalDitali;
+  document.getElementById('statRoomsCount').textContent = appState.stanze.length;
+
+  // Distruggi le istanze precedenti per evitare sovrapposizioni al re-rendering
+  if (chartCategorieInstance) chartCategorieInstance.destroy();
+  if (chartStanzeInstance) chartStanzeInstance.destroy();
+
+  // Registra il plugin dei data labels se disponibile
+  if (typeof ChartDataLabels !== 'undefined') {
+    Chart.register(ChartDataLabels);
+  }
+
+  // ---------------------------------------------------------
+  // 1. GRAFICO CATEGORIE (Donut)
+  // ---------------------------------------------------------
+  const catLabels = Object.keys(perCategoria);
+  const catData = catLabels.map(l => perCategoria[l].totale);
+  const catColors = catLabels.map(l => perCategoria[l].colore);
+
+  const ctxCat = document.getElementById('chartCategorie').getContext('2d');
+  chartCategorieInstance = new Chart(ctxCat, {
+    type: 'doughnut',
+    data: {
+      labels: catLabels,
+      datasets: [{
+        data: catData,
+        backgroundColor: catColors,
+        borderWidth: 2,
+        borderColor: '#0f172a'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#f8fafc' }
+        },
+        datalabels: {
+          display: false // Disabilitato sul Donut per evitare disordine visivo
+        }
+      }
+    }
+  });
+
+  // ---------------------------------------------------------
+  // 2. GRAFICO STANZE (Barre con colori unici e numeri al centro)
+  // ---------------------------------------------------------
+  const stanzaLabels = Object.keys(perStanza);
+  const stanzaData = stanzaLabels.map(l => perStanza[l]);
+
+  // Palette dinamica HSL per generare toni distinti per ogni stanza
+  const coloriStanze = stanzaLabels.map((_, i) => {
+    const hue = (i * 137.5) % 360;
+    return `hsl(${hue}, 70%, 55%)`;
+  });
+
+  const ctxStanze = document.getElementById('chartStanze').getContext('2d');
+  chartStanzeInstance = new Chart(ctxStanze, {
+    type: 'bar',
+    data: {
+      labels: stanzaLabels,
+      datasets: [{
+        label: 'Ditali',
+        data: stanzaData,
+        backgroundColor: coloriStanze,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#94a3b8' },
+          grid: { color: '#334155' }
+        },
+        x: {
+          ticks: { color: '#94a3b8' },
+          grid: { display: false }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'center',
+          align: 'center',
+          color: '#ffffff',
+          font: {
+            weight: 'bold',
+            size: 13
+          },
+          formatter: (value) => (value > 0 ? value : '')
+        }
+      }
+    }
+  });
+}
