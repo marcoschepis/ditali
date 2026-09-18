@@ -29,6 +29,64 @@ const GITHUB_CONFIG = {
 };
 
 // ---------------------------------------------------------
+// CALCOLO TOTALI (STANZE & GENERALE)
+// ---------------------------------------------------------
+function calcolaTotaleStanza(stanza) {
+  if (!stanza || !stanza.griglia) return 0;
+  
+  let totaleStanza = 0;
+  const visitati = new Set();
+
+  for (let r = 0; r < stanza.righe; r++) {
+    for (let c = 0; c < stanza.colonne; c++) {
+      const key = `${r}_${c}`;
+      const cell = stanza.griglia[key];
+
+      if (cell && cell.tipo === 'bacheca' && !visitati.has(key)) {
+        const coda = [{ r, c }];
+        visitati.add(key);
+        const currentGruppoId = cell.gruppoId || null;
+
+        if (cell.totaleGruppo !== undefined) {
+          totaleStanza += parseInt(cell.totaleGruppo) || 0;
+        }
+
+        while (coda.length > 0) {
+          const curr = coda.shift();
+          const vicini = [
+            { r: curr.r - 1, c: curr.c },
+            { r: curr.r + 1, c: curr.c },
+            { r: curr.r, c: curr.c - 1 },
+            { r: curr.r, c: curr.c + 1 }
+          ];
+
+          vicini.forEach(v => {
+            const vKey = `${v.r}_${v.c}`;
+            const vCell = stanza.griglia[vKey];
+            if (
+              vCell &&
+              vCell.tipo === 'bacheca' &&
+              vCell.categoria === cell.categoria &&
+              (vCell.gruppoId || null) === currentGruppoId &&
+              !visitati.has(vKey)
+            ) {
+              visitati.add(vKey);
+              coda.push(v);
+            }
+          });
+        }
+      }
+    }
+  }
+
+  return totaleStanza;
+}
+
+function calcolaTotaleGenerale() {
+  return appState.stanze.reduce((acc, stanza) => acc + calcolaTotaleStanza(stanza), 0);
+}
+
+// ---------------------------------------------------------
 // INIZIALIZZAZIONE & STATO
 // ---------------------------------------------------------
 async function init() {
@@ -37,19 +95,9 @@ async function init() {
   renderGriglia();
 
   window.addEventListener('resize', () => {
-    if (document.activeElement && document.activeElement.tagName === 'INPUT') {
-      return;
-    }
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
     renderGriglia();
   });
-
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', () => {
-      if (document.activeElement && document.activeElement.tagName === 'INPUT') {
-        return;
-      }
-    });
-  }
 }
 
 function toggleModalita() {
@@ -97,7 +145,7 @@ async function caricaLayoutDaRepo() {
       if (appState.stanzaAttivaIdx === undefined) appState.stanzaAttivaIdx = 0;
     }
   } catch (err) {
-    console.log("Nessun file bacheca.json trovato o errore nel caricamento. Uso lo stato predefinito.", err);
+    console.log("Nessun file bacheca.json trovato. Uso lo stato predefinito.", err);
   }
   inizializzaStanzaAttiva();
 }
@@ -119,7 +167,7 @@ function inizializzaStanzaAttiva() {
 }
 
 // ---------------------------------------------------------
-// GESTIONE STANZE
+// GESTIONE STANZE & DISPLAY TOTALI
 // ---------------------------------------------------------
 function renderTabsStanze() {
   const container = document.getElementById('roomsTabs');
@@ -127,10 +175,13 @@ function renderTabsStanze() {
   container.innerHTML = '';
 
   appState.stanze.forEach((stanza, idx) => {
+    const totStanza = calcolaTotaleStanza(stanza);
     const tab = document.createElement('div');
     tab.className = `tab-room ${idx === appState.stanzaAttivaIdx ? 'active' : ''}`;
     tab.innerHTML = `
-      <span onclick="cambiaStanza(${idx})">${stanza.nome}</span>
+      <span onclick="cambiaStanza(${idx})">
+        ${stanza.nome} <strong style="opacity: 0.85; margin-left: 4px;">(${totStanza})</strong>
+      </span>
       ${!isViewMode && appState.stanze.length > 1 ? `<span class="del-room" onclick="eliminaStanza(${idx})">✕</span>` : ''}
     `;
     container.appendChild(tab);
@@ -143,6 +194,8 @@ function renderTabsStanze() {
     if (inputRows) inputRows.value = stanza.righe;
     if (inputCols) inputCols.value = stanza.colonne;
   }
+
+  document.getElementById('totalCount').textContent = `Totale: ${calcolaTotaleGenerale()}`;
 }
 
 function cambiaStanza(idx) {
@@ -322,12 +375,8 @@ function calcolaUnioneEBordi(tile, r, c, cell, stanza) {
     };
 
     const gestisciBordo = (other) => {
-      if (!other || other.tipo !== 'bacheca') {
-        return wOuter;
-      }
-      if (!StessoGruppo(other)) {
-        return wInner;
-      }
+      if (!other || other.tipo !== 'bacheca') return wOuter;
+      if (!StessoGruppo(other)) return wInner;
       return 'none';
     };
 
@@ -356,8 +405,6 @@ function renderBadgesCentrati(stanza, container) {
         while (coda.length > 0) {
           const curr = coda.shift();
           const currKey = `${curr.r}_${curr.c}`;
-          const currCell = stanza.griglia[currKey];
-
           gruppo.push(currKey);
 
           const vicini = [

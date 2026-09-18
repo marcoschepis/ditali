@@ -47,6 +47,18 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   margin-bottom: 12px;
 }
 
+.rooms-total-badge {
+  background-color: #e0e0e0;
+  color: #000000;
+  font-weight: bold;
+  font-size: 0.85rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-right: 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .rooms-tabs-container {
   display: flex;
   align-items: center;
