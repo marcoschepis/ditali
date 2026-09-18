@@ -42,21 +42,38 @@ function toggleModalita() {
   isViewMode = !isViewMode;
   selezioni.clear();
   aggiornaInterfacciaModalita();
-  renderGriglia();
+  
+  // Timeout per consentire al reflow del layout di aggiornare le proporzioni della griglia
+  setTimeout(() => {
+    renderGriglia();
+  }, 20);
 }
 
 function aggiornaInterfacciaModalita() {
   const btn = document.getElementById('btnToggleMode');
   if (isViewMode) {
     document.body.classList.add('view-only-mode');
-    if (btn) btn.innerHTML = '✏️ Passa a Modifica';
+    if (btn) btn.innerHTML = '✏️ Modifica';
   } else {
     document.body.classList.remove('view-only-mode');
-    if (btn) btn.innerHTML = '👁️ Passa a Visualizzazione';
+    if (btn) btn.innerHTML = '👁️ Vista';
     renderTabsStanze();
     renderCategorie();
     setupDragSelection();
   }
+}
+
+// Cambia la scheda visibile nella sidebar dell'editor
+function mostraSideTab(tabId) {
+  document.querySelectorAll('.side-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+  const activeBtn = Array.from(document.querySelectorAll('.side-tab'))
+    .find(b => b.getAttribute('onclick').includes(tabId));
+  if (activeBtn) activeBtn.classList.add('active');
+
+  const activeContent = document.getElementById(tabId);
+  if (activeContent) activeContent.classList.add('active');
 }
 
 async function caricaLayoutDaRepo() {
@@ -428,7 +445,7 @@ function calcolaUnioneEBordi(tile, r, c, cell, stanza, totaliBacheche) {
 }
 
 // ---------------------------------------------------------
-// INTERAZIONE & SELEZIONE
+// INTERAZIONE & SELEZIONE (OTTIMIZZATA PER TOUCH E MOUSE)
 // ---------------------------------------------------------
 function setupDragSelection() {
   const grid = document.getElementById('roomGrid');
@@ -453,6 +470,9 @@ function setupDragSelection() {
   grid.addEventListener('pointermove', (e) => {
     if (!isMouseDown || isViewMode) return;
 
+    // Blocca lo scroll del browser mentre si trascinano le celle
+    if (e.cancelable) e.preventDefault();
+
     const target = document.elementFromPoint(e.clientX, e.clientY);
     const tile = target ? target.closest('.tile') : null;
 
@@ -460,7 +480,7 @@ function setupDragSelection() {
       const currentCoords = { r: parseInt(tile.dataset.r), c: parseInt(tile.dataset.c) };
       aggiornaSelezioneRettangolo(dragStartCoords, currentCoords);
     }
-  });
+  }, { passive: false });
 
   window.addEventListener('pointerup', () => {
     if (isMouseDown) {

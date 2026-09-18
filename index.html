@@ -1,22 +1,35 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Layout Stanze & Bacheche</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ditali</title>
+    <link rel="icon" type="image/jpeg" href="ditale.jpg">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Collegamento al Manifest PWA -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Colore della barra di stato per Android/Chrome -->
+    <meta name="theme-color" content="#0f172a">
+
+    <!-- Configurazione per iOS / Safari (Rimuove la barra di navigazione) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Ditali">
+    <link rel="apple-touch-icon" href="ditale.jpg">
 </head>
 <body>
 
-  <!-- SELETTORE STANZE E MODALITÀ -->
+  <!-- SELETTORE STANZE E AZIONI -->
   <div class="rooms-bar">
     <div class="rooms-tabs-container">
       <span class="rooms-label">Stanze:</span>
       <div id="roomsTabs" class="rooms-tabs"></div>
     </div>
     <div class="rooms-actions">
-      <button id="btnToggleMode" onclick="toggleModalita()" class="btn-mode-toggle">✏️ Passa a Modifica</button>
       <button onclick="creaNuovaStanza()" class="btn-add-room editor-only">+ Nuova Stanza</button>
+      <button id="btnToggleMode" onclick="toggleModalita()" class="btn-mode-toggle">✏️ Modifica</button>
     </div>
   </div>
 
@@ -24,43 +37,41 @@
     
     <!-- MAPPA STANZA -->
     <section class="room-panel">
-      <div class="controls editor-only">
-        <label>Righe: <input type="number" id="roomRows" value="10" min="5" max="40" onchange="ridimensionaStanza()"></label>
-        <label>Colonne: <input type="number" id="roomCols" value="14" min="5" max="40" onchange="ridimensionaStanza()"></label>
-        <span class="hint">💡 Parti da in alto a sinistra. Trascina col mouse per selezionare più celle. Due celle uguali vicine si uniranno.</span>
-      </div>
-
       <div id="roomGrid" class="room-grid"></div>
     </section>
 
-    <!-- SIDEBAR CONTROLLI -->
+    <!-- SIDEBAR CONTROLLI CON TAB SELEZIONABILI -->
     <aside class="sidebar">
       
-      <!-- 1. GESTIONE CATEGORIE -->
-      <div class="card-section">
-        <h3>🏷️ Categorie Bacheche</h3>
-        
-        <div class="cat-form">
-          <input type="text" id="newCatInput" placeholder="Nome (es. Italia, Europa...)">
-          <div class="cat-color-pick">
-            <input type="color" id="newCatColor" value="#0284c7" title="Scegli colore categoria">
-            <button onclick="aggiungiCategoria()">Aggiungi</button>
-          </div>
-        </div>
-
-        <div id="categoriesList" class="categories-list"></div>
+      <!-- MENU A SCHEDE PER MOBILE & DESKTOP -->
+      <div class="sidebar-tabs">
+        <button class="side-tab" onclick="mostraSideTab('tabStanza')">📐 Dimensioni</button>
+        <button class="side-tab active" onclick="mostraSideTab('tabSelezione')">⚙️ Selezione</button>
+        <button class="side-tab" onclick="mostraSideTab('tabCategorie')">🏷️ Categorie</button>
+        <button class="side-tab" onclick="mostraSideTab('tabSalva')">💾 Salva</button>
       </div>
 
-      <!-- 2. EDITOR SELEZIONE -->
-      <div class="card-section">
-        <h3>⚙️ Applica alla Selezione</h3>
-        
-        <div id="selectionInfo" class="info-msg">
-          Nessuna cella selezionata.
+      <!-- TAB 0: CONFIGURAZIONE STANZA -->
+      <div id="tabStanza" class="card-section tab-content">
+        <h3>📐 Dimensioni Griglia</h3>
+        <div class="dim-config-group">
+          <label>Righe: 
+            <input type="number" id="roomRows" value="10" min="5" max="40" onchange="ridimensionaStanza()">
+          </label>
+          <label>Colonne: 
+            <input type="number" id="roomCols" value="14" min="5" max="40" onchange="ridimensionaStanza()">
+          </label>
+        </div>
+      </div>
+
+      <!-- TAB 1: EDITOR SELEZIONE & DIMENSIONI -->
+      <div id="tabSelezione" class="card-section tab-content active">
+        <div class="selection-header">
+            <h3>⚙️ Applica alla Selezione</h3>
+            <div id="selectionInfo" class="info-msg">Nessuna cella selezionata.</div>
         </div>
 
         <div id="editorForm" style="display: none;">
-          <label for="tileType">Tipo Elemento:</label>
           <select id="tileType" onchange="toggleTipoInputs()">
             <option value="vuoto">⬜ Spazio Vuoto</option>
             <option value="muro">🧱 Muro</option>
@@ -89,10 +100,25 @@
         </div>
       </div>
 
-      <!-- 3. SALVATAGGIO / CARICAMENTO -->
-      <div class="card-section">
+      <!-- TAB 2: GESTIONE CATEGORIE -->
+      <div id="tabCategorie" class="card-section tab-content">
+        <h3>🏷️ Categorie Bacheche</h3>
+        
+        <div class="cat-form">
+          <input type="text" id="newCatInput" placeholder="Nome (es. Italia, Europa...)">
+          <div class="cat-color-pick">
+            <input type="color" id="newCatColor" value="#0284c7" title="Scegli colore categoria">
+            <button onclick="aggiungiCategoria()">Aggiungi</button>
+          </div>
+        </div>
+
+        <div id="categoriesList" class="categories-list"></div>
+      </div>
+
+      <!-- TAB 3: SALVATAGGIO / CARICAMENTO -->
+      <div id="tabSalva" class="card-section tab-content">
         <h3>💾 Salva / Carica</h3>
-        <button onclick="esportaJSON()" class="btn-sec full-width-mb">📥 Esporta JSON</button>
+        <button onclick="esportaJSON()" class="btn-sec full-width-mb">📥 Esporta JSON Locale</button>
         <button onclick="document.getElementById('importInput').click()" class="btn-sec full-width-mb">📤 Importa JSON</button>
         <button onclick="salvaSuGitHub()" class="btn-primary full-width">🌐 Salva su GitHub</button>
         <input type="file" id="importInput" accept=".json" style="display:none" onchange="importaJSON(event)">

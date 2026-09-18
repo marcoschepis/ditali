@@ -11,11 +11,11 @@ body {
   color: var(--text-main);
   font-family: system-ui, -apple-system, sans-serif;
   margin: 0;
-  padding: 16px;
+  padding: 12px;
   box-sizing: border-box;
 }
 
-/* BOTTONI GENERICI UTILITY */
+/* BOTTONI GENERICI */
 button {
   background: #0284c7;
   color: white;
@@ -42,8 +42,8 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: 16px;
+  padding: 6px 12px;
+  margin-bottom: 12px;
 }
 
 .rooms-tabs-container {
@@ -56,7 +56,7 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
 .rooms-label {
   font-weight: bold;
   color: #94a3b8;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .rooms-tabs {
@@ -97,10 +97,11 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
 
 .rooms-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
+/* PULSANTI COMPATTI DELLA BARRA SUPERIORE */
 .btn-add-room {
   background: #15803d;
   font-size: 0.85rem;
@@ -110,31 +111,28 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
 
 .btn-mode-toggle {
   background-color: #3b82f6;
-  color: white;
-  border: none;
+  font-size: 0.85rem;
   padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
+  white-space: nowrap;
 }
 
 .btn-mode-toggle:hover {
   background-color: #2563eb;
 }
 
-/* LAYOUT PRINCIPALE */
+/* LAYOUT PRINCIPALE DESKTOP */
 .main-layout {
   display: grid;
   grid-template-columns: 1fr 320px;
-  gap: 16px;
-  height: calc(100vh - 120px);
+  gap: 12px;
+  height: calc(100vh - 80px);
 }
 
 .room-panel {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -143,12 +141,12 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
 .controls {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 10px;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
 .controls input {
-  width: 50px;
+  width: 48px;
   padding: 4px;
   background: var(--bg-dark);
   color: white;
@@ -166,7 +164,7 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   display: grid;
   gap: 0;
   background: #020617;
-  padding: 8px;
+  padding: 6px;
   border-radius: 6px;
   border: 1px solid var(--border-color);
   flex: 1;
@@ -236,32 +234,87 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
-/* SIDEBAR E PANNELLI */
-.sidebar {
+/* SIDEBAR CON TAB SELECTABLE */
+/* REGOLAZIONE PER 4 TAB NELLA SIDEBAR */
+.sidebar-tabs {
+  display: flex;
+  gap: 2px;
+  background: #0f172a;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.side-tab {
+  flex: 1;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  padding: 6px 2px;
+  border-radius: 5px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.side-tab.active {
+  background: #0284c7;
+  color: white;
+  font-weight: bold;
+}
+
+/* CONFIGURAZIONE SCHEDA DIMENSIONI STANZA */
+.dim-config-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  overflow-y: auto;
+  gap: 10px;
+  background: #0f172a;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.dim-config-group label {
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dim-config-group input[type="number"] {
+  width: 60px;
+  padding: 4px 6px;
+  margin: 0;
+  background: var(--bg-dark);
+  color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
 }
 
 .card-section {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 14px;
+  padding: 12px;
 }
 
 .card-section h3 {
   margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 0.95rem;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
 }
 
 .cat-form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 8px;
   background: #0f172a;
   padding: 8px;
   border-radius: 6px;
@@ -270,13 +323,13 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
 
 .cat-color-pick {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
 .cat-color-pick input[type="color"] {
-  width: 50px;
-  height: 34px;
+  width: 44px;
+  height: 32px;
   margin: 0;
   padding: 2px;
 }
@@ -289,14 +342,14 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 140px;
+  max-height: 120px;
   overflow-y: auto;
 }
 
 .cat-item {
   background: #0f172a;
   border: 1px solid var(--border-color);
-  padding: 6px 10px;
+  padding: 6px 8px;
   border-radius: 6px;
   font-size: 0.85rem;
   display: flex;
@@ -307,12 +360,12 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
 .cat-item-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .color-dot {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 3px;
   display: inline-block;
 }
@@ -330,7 +383,7 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
 }
 
 .opt-group {
-  margin-top: 10px;
+  margin-top: 8px;
   padding: 8px;
   background: #0f172a;
   border-radius: 6px;
@@ -338,9 +391,9 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
 
 select, input[type="text"], input[type="color"] {
   width: 100%;
-  padding: 8px;
+  padding: 6px;
   margin-top: 4px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   background: var(--bg-dark);
   color: white;
   border: 1px solid var(--border-color);
@@ -353,7 +406,7 @@ select, input[type="text"], input[type="color"] {
   font-size: 0.85rem;
 }
 
-/* VISUALIZZAZIONE / MODIFICA MODES */
+/* VISUALIZZAZIONE MODES */
 body.view-only-mode .sidebar,
 body.view-only-mode .editor-only {
   display: none !important;
@@ -361,4 +414,66 @@ body.view-only-mode .editor-only {
 
 body.view-only-mode .main-layout {
   grid-template-columns: 1fr;
+}
+
+/* =========================================================
+   OTTIMIZZAZIONE MOBILE (SOLUZIONE 1 COMPATTA)
+   ========================================================= */
+@media (max-width: 768px) {
+  body {
+    padding: 6px;
+  }
+
+  .main-layout {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 65px);
+    gap: 6px;
+  }
+
+  .room-panel {
+    flex: 1;
+    padding: 6px;
+  }
+
+  /* La sidebar diventa un pannello sottile in basso */
+  .sidebar {
+    height: fit-content;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 6px;
+  }
+
+  .sidebar-tabs {
+    margin-bottom: 6px;
+  }
+
+  .card-section {
+    padding: 8px;
+  }
+
+  .hint {
+    display: none;
+  }
+}
+
+
+.selection-header {
+  display: flex;
+  align-items: center;  /* Allinea verticalmente al centro */
+  justify-content: space-between; /* Mantiene h3 a sinistra e info a destra */
+  gap: 8px;             /* Spazio minimo tra i due elementi */
+  margin-bottom: 8px;
+}
+
+.selection-header h3 {
+  margin: 0;            /* Rimuove i margini di default dell'h3 */
+  white-space: nowrap;  /* Evita che il titolo vada a capo */
+}
+
+.selection-header .info-msg {
+  margin: 0;
+  font-size: 0.8rem;
+  text-align: right;
 }
