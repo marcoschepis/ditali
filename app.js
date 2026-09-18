@@ -35,10 +35,10 @@ async function init() {
   await caricaLayoutDaRepo();
   aggiornaInterfacciaModalita();
   renderGriglia();
-  // Blocca i re-render automatici della griglia quando la tastiera mobile è aperta
+
   window.addEventListener('resize', () => {
     if (document.activeElement && document.activeElement.tagName === 'INPUT') {
-      return; // NON ridisegnare la griglia se si sta scrivendo
+      return;
     }
     renderGriglia();
   });
@@ -57,7 +57,6 @@ function toggleModalita() {
   selezioni.clear();
   aggiornaInterfacciaModalita();
   
-  // Timeout per consentire al reflow del layout di aggiornare le proporzioni della griglia
   setTimeout(() => {
     renderGriglia();
   }, 20);
@@ -77,13 +76,12 @@ function aggiornaInterfacciaModalita() {
   }
 }
 
-// Cambia la scheda visibile nella sidebar dell'editor
 function mostraSideTab(tabId) {
   document.querySelectorAll('.side-tab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
   const activeBtn = Array.from(document.querySelectorAll('.side-tab'))
-    .find(b => b.getAttribute('onclick').includes(tabId));
+    .find(b => b.getAttribute('onclick')?.includes(tabId));
   if (activeBtn) activeBtn.classList.add('active');
 
   const activeContent = document.getElementById(tabId);
@@ -118,14 +116,6 @@ function inizializzaStanzaAttiva() {
       if (!stanza.griglia[key]) stanza.griglia[key] = { tipo: 'vuoto' };
     }
   }
-}
-
-function debounce(func, wait) {
-  let timeout;
-  return function(...args) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
-  };
 }
 
 // ---------------------------------------------------------
@@ -274,7 +264,6 @@ function renderGriglia() {
   container.innerHTML = '';
   tileElements = [];
 
-  const totaliBacheche = calcolaTotaliBachecheUnite(stanza);
   const fragment = document.createDocumentFragment();
 
   for (let r = 0; r < stanza.righe; r++) {
@@ -292,43 +281,11 @@ function renderGriglia() {
         tile.style.backgroundColor = cell.colore || '#334155';
       } else if (cell.tipo === 'bacheca') {
         tile.style.backgroundColor = getColoreCategoria(cell.categoria);
-
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.className = 'tile-input';
-        input.value = cell.valore !== undefined ? cell.valore : '';
-
-        if (isViewMode) {
-          input.readOnly = true;
-          input.style.cursor = 'default';
-        } else {
-          input.addEventListener('input', (e) => {
-            stanza.griglia[key].valore = e.target.value;
-            aggiornaTotaleBachecheSilent(stanza);
-          });
-
-          const gestisciSelezioneCella = (e) => {
-            e.stopPropagation();
-            if (!e.shiftKey && !e.ctrlKey) {
-              selezioni.clear();
-              tileElements.forEach(t => t.classList.remove('selected'));
-            }
-            selezioni.add(key);
-            tile.classList.add('selected');
-            aggiornaPannelloEditor();
-          };
-
-          input.addEventListener('focus', gestisciSelezioneCella);
-          input.addEventListener('pointerdown', gestisciSelezioneCella);
-          input.addEventListener('mousedown', gestisciSelezioneCella);
-        }
-
-        tile.appendChild(input);
       } else {
         tile.style.backgroundColor = '#1e293b';
       }
 
-      calcolaUnioneEBordi(tile, r, c, cell, stanza, totaliBacheche);
+      calcolaUnioneEBordi(tile, r, c, cell, stanza);
 
       fragment.appendChild(tile);
       tileElements.push(tile);
@@ -336,11 +293,53 @@ function renderGriglia() {
   }
 
   container.appendChild(fragment);
+  renderBadgesCentrati(stanza, container);
 }
 
-function calcolaTotaliBachecheUnite(stanza) {
+function calcolaUnioneEBordi(tile, r, c, cell, stanza) {
+  if (cell.tipo === 'vuoto') return;
+
+  const top = stanza.griglia[`${r-1}_${c}`];
+  const right = stanza.griglia[`${r}_${c+1}`];
+  const bottom = stanza.griglia[`${r+1}_${c}`];
+  const left = stanza.griglia[`${r}_${c-1}`];
+
+  if (cell.tipo === 'muro') {
+    const StessoMuro = (other) => other && other.tipo === 'muro' && other.colore === cell.colore;
+    tile.style.borderTop = StessoMuro(top) ? 'none' : '1px solid rgba(0,0,0,0.4)';
+    tile.style.borderRight = StessoMuro(right) ? 'none' : '1px solid rgba(0,0,0,0.4)';
+    tile.style.borderBottom = StessoMuro(bottom) ? 'none' : '1px solid rgba(0,0,0,0.4)';
+    tile.style.borderLeft = StessoMuro(left) ? 'none' : '1px solid rgba(0,0,0,0.4)';
+  } else if (cell.tipo === 'bacheca') {
+    const wOuter = '3px solid var(--wood-frame, #8b5a2b)';
+    const wInner = '2px solid var(--wood-frame-divider, #5c3a1e)';
+
+    const StessoGruppo = (other) => {
+      if (!other || other.tipo !== 'bacheca') return false;
+      const stessaCat = other.categoria === cell.categoria;
+      const stessoSubId = (cell.gruppoId || null) === (other.gruppoId || null);
+      return stessaCat && stessoSubId;
+    };
+
+    const gestisciBordo = (other) => {
+      if (!other || other.tipo !== 'bacheca') {
+        return wOuter;
+      }
+      if (!StessoGruppo(other)) {
+        return wInner;
+      }
+      return 'none';
+    };
+
+    tile.style.borderTop = gestisciBordo(top);
+    tile.style.borderRight = gestisciBordo(right);
+    tile.style.borderBottom = gestisciBordo(bottom);
+    tile.style.borderLeft = gestisciBordo(left);
+  }
+}
+
+function renderBadgesCentrati(stanza, container) {
   const visitati = new Set();
-  const totaliBacheche = {};
 
   for (let r = 0; r < stanza.righe; r++) {
     for (let c = 0; c < stanza.colonne; c++) {
@@ -350,20 +349,16 @@ function calcolaTotaliBachecheUnite(stanza) {
       if (cell && cell.tipo === 'bacheca' && !visitati.has(key)) {
         const coda = [{ r, c }];
         const gruppo = [];
-        let sommaTotale = 0;
         visitati.add(key);
+
+        const currentGruppoId = cell.gruppoId || null;
 
         while (coda.length > 0) {
           const curr = coda.shift();
           const currKey = `${curr.r}_${curr.c}`;
           const currCell = stanza.griglia[currKey];
 
-          gruppo.push(curr);
-
-          const val = parseInt(currCell.valore);
-          if (!isNaN(val)) {
-            sommaTotale += val;
-          }
+          gruppo.push(currKey);
 
           const vicini = [
             { r: curr.r - 1, c: curr.c },
@@ -375,10 +370,12 @@ function calcolaTotaliBachecheUnite(stanza) {
           vicini.forEach(v => {
             const vKey = `${v.r}_${v.c}`;
             const vCell = stanza.griglia[vKey];
+            
             if (
               vCell &&
               vCell.tipo === 'bacheca' &&
               vCell.categoria === cell.categoria &&
+              (vCell.gruppoId || null) === currentGruppoId &&
               !visitati.has(vKey)
             ) {
               visitati.add(vKey);
@@ -387,86 +384,54 @@ function calcolaTotaliBachecheUnite(stanza) {
           });
         }
 
-        gruppo.sort((a, b) => (a.r === b.r ? a.c - b.c : a.r - b.r));
-        const topLeftKey = `${gruppo[0].r}_${gruppo[0].c}`;
+        const totaleAttuale = cell.totaleGruppo !== undefined ? cell.totaleGruppo : '';
 
-        totaliBacheche[topLeftKey] = sommaTotale;
+        let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+        gruppo.forEach(k => {
+          const [pr, pc] = k.split('_').map(Number);
+          if (pr < minR) minR = pr;
+          if (pr > maxR) maxR = pr;
+          if (pc < minC) minC = pc;
+          if (pc > maxC) maxC = pc;
+        });
+
+        const centerC = ((minC + maxC + 1) / 2) / stanza.colonne * 100;
+        const centerR = ((minR + maxR + 1) / 2) / stanza.righe * 100;
+
+        const badge = document.createElement('div');
+        badge.className = 'bacheca-total-badge';
+        badge.innerText = totaleAttuale !== '' ? `Tot: ${totaleAttuale}` : 'Tot: 0';
+        badge.style.left = `${centerC}%`;
+        badge.style.top = `${centerR}%`;
+        badge.style.cursor = isViewMode ? 'default' : 'pointer';
+
+        if (!isViewMode) {
+          badge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const nuovoTotale = prompt(`Inserisci il totale per la bacheca (${cell.categoria}):`, totaleAttuale);
+            if (nuovoTotale !== null) {
+              const val = parseInt(nuovoTotale) || 0;
+              cell.totaleGruppo = val;
+              renderGriglia();
+            }
+          });
+        }
+
+        container.appendChild(badge);
       }
-    }
-  }
-
-  return totaliBacheche;
-}
-
-function aggiornaTotaleBachecheSilent(stanza) {
-  const totali = calcolaTotaliBachecheUnite(stanza);
-
-  document.querySelectorAll('.bacheca-total-badge').forEach(el => el.remove());
-
-  Object.keys(totali).forEach(key => {
-    const tile = document.querySelector(`.tile[data-key="${key}"]`);
-    if (tile && totali[key] > 0) {
-      const badge = document.createElement('div');
-      badge.className = 'bacheca-total-badge';
-      badge.innerText = `Tot: ${totali[key]}`;
-      tile.appendChild(badge);
-    }
-  });
-}
-
-function calcolaUnioneEBordi(tile, r, c, cell, stanza, totaliBacheche) {
-  if (cell.tipo === 'vuoto') return;
-
-  const top = stanza.griglia[`${r-1}_${c}`];
-  const right = stanza.griglia[`${r}_${c+1}`];
-  const bottom = stanza.griglia[`${r+1}_${c}`];
-  const left = stanza.griglia[`${r}_${c-1}`];
-
-  const StessoGruppo = (other) => {
-    if (!other) return false;
-    if (cell.tipo === 'muro') return other.tipo === 'muro' && other.colore === cell.colore;
-    if (cell.tipo === 'bacheca') return other.tipo === 'bacheca' && other.categoria === cell.categoria;
-    return false;
-  };
-
-  const hasTop = StessoGruppo(top);
-  const hasRight = StessoGruppo(right);
-  const hasBottom = StessoGruppo(bottom);
-  const hasLeft = StessoGruppo(left);
-
-  if (cell.tipo === 'muro') {
-    tile.style.borderTop = hasTop ? 'none' : '1px solid rgba(0,0,0,0.4)';
-    tile.style.borderRight = hasRight ? 'none' : '1px solid rgba(0,0,0,0.4)';
-    tile.style.borderBottom = hasBottom ? 'none' : '1px solid rgba(0,0,0,0.4)';
-    tile.style.borderLeft = hasLeft ? 'none' : '1px solid rgba(0,0,0,0.4)';
-  } else if (cell.tipo === 'bacheca') {
-    const wWidth = '3px';
-    const wColor = 'var(--wood-frame, #8b5a2b)';
-
-    tile.style.borderTop = hasTop ? 'none' : `${wWidth} solid ${wColor}`;
-    tile.style.borderRight = hasRight ? 'none' : `${wWidth} solid ${wColor}`;
-    tile.style.borderBottom = hasBottom ? 'none' : `${wWidth} solid ${wColor}`;
-    tile.style.borderLeft = hasLeft ? 'none' : `${wWidth} solid ${wColor}`;
-
-    const key = `${r}_${c}`;
-    if (totaliBacheche && totaliBacheche[key] !== undefined && totaliBacheche[key] > 0) {
-      const badge = document.createElement('div');
-      badge.className = 'bacheca-total-badge';
-      badge.innerText = `Tot: ${totaliBacheche[key]}`;
-      tile.appendChild(badge);
     }
   }
 }
 
 // ---------------------------------------------------------
-// INTERAZIONE & SELEZIONE (OTTIMIZZATA PER TOUCH E MOUSE)
+// INTERAZIONE & SELEZIONE
 // ---------------------------------------------------------
 function setupDragSelection() {
   const grid = document.getElementById('roomGrid');
   if (!grid) return;
 
   grid.addEventListener('pointerdown', (e) => {
-    if (isViewMode || e.target.tagName === 'INPUT') return;
+    if (isViewMode || e.target.closest('.bacheca-total-badge')) return;
 
     const tile = e.target.closest('.tile');
     if (!tile) return;
@@ -484,7 +449,6 @@ function setupDragSelection() {
   grid.addEventListener('pointermove', (e) => {
     if (!isMouseDown || isViewMode) return;
 
-    // Blocca lo scroll del browser mentre si trascinano le celle
     if (e.cancelable) e.preventDefault();
 
     const target = document.elementFromPoint(e.clientX, e.clientY);
@@ -563,6 +527,7 @@ function applicaASelezione() {
   const tipo = document.getElementById('tileType').value;
   const coloreMuro = document.getElementById('muroColor').value;
   const catBacheca = document.getElementById('bachecaCategorySelect').value;
+  const nuovoId = 'sub_' + crypto.randomUUID();
 
   selezioni.forEach(key => {
     if (tipo === 'vuoto') {
@@ -570,11 +535,10 @@ function applicaASelezione() {
     } else if (tipo === 'muro') {
       stanza.griglia[key] = { tipo: 'muro', colore: coloreMuro };
     } else if (tipo === 'bacheca') {
-      const vecchioValore = stanza.griglia[key]?.valore || '';
       stanza.griglia[key] = {
         tipo: 'bacheca',
         categoria: catBacheca,
-        valore: vecchioValore
+        gruppoId: nuovoId
       };
     }
   });

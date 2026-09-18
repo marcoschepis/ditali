@@ -3,7 +3,8 @@
   --card-bg: #1e293b;
   --border-color: #334155;
   --text-main: #f8fafc;
-  --wood-frame: #5c3a21;
+  --wood-frame: #5c3a1e;         /* Legno principale cornice esterna */
+  --wood-frame-divider: #8b5a2b; /* Legno scuro/ombra per divisori interni */
 }
 
 body {
@@ -173,6 +174,7 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   box-sizing: border-box;
   user-select: none;
   touch-action: none;
+  position: relative;
 }
 
 .tile {
@@ -218,20 +220,25 @@ button.btn-apply { background: #16a34a; width: 100%; margin-top: 10px; padding: 
   border-radius: 4px;
 }
 
+/* Badge del totale svincolato dalle celle e posizionato nel centro geometrico assoluto */
 .bacheca-total-badge {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  background: rgba(15, 23, 42, 0.95);
-  color: #facc15;
-  font-size: 0.68rem;
+  transform: translate(-50%, -50%);
+  background-color: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: bold;
-  padding: 1px 5px;
-  border-radius: 3px;
-  border: 1px solid rgba(250, 204, 21, 0.5);
-  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   z-index: 10;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  user-select: none;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+body:not(.view-only-mode) .bacheca-total-badge:hover {
+  background-color: #0284c7;
+  transform: translate(-50%, -50%) scale(1.1);
 }
 
 /* SIDEBAR CON TAB SELECTABLE */
