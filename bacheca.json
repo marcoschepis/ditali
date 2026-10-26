@@ -1,5 +1,5 @@
 {
-  "stanzaAttivaIdx": 1,
+  "stanzaAttivaIdx": 0,
   "categorie": [
     {
       "nome": "Italia",
@@ -128,7 +128,7 @@
           "tipo": "bacheca",
           "categoria": "Stranieri",
           "gruppoId": "sub_fad8d897-649d-4e75-b3d5-e6222555a13d",
-          "totaleGruppo": 14
+          "totaleGruppo": 16
         },
         "1_13": {
           "tipo": "bacheca",
@@ -304,7 +304,7 @@
           "tipo": "bacheca",
           "categoria": "Italia",
           "gruppoId": "sub_890ba7e3-1c6b-40c6-aaed-eb2e93a0ef1b",
-          "totaleGruppo": 22
+          "totaleGruppo": 23
         },
         "4_13": {
           "tipo": "bacheca",
@@ -2806,7 +2806,7 @@
           "tipo": "bacheca",
           "categoria": "Italia",
           "gruppoId": "sub_7372d3bf-a2ad-4a46-834e-13a6f6695b71",
-          "totaleGruppo": 26
+          "totaleGruppo": 25
         },
         "6_2": {
           "tipo": "bacheca",
